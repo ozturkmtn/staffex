@@ -23,6 +23,21 @@ class StaffController extends AbstractController
     )
     {}
 
+    #[Route("/{id}", name:"get_staff", methods:["GET"])]
+    public function getAction($id, Request $request): Response
+    {
+        try {
+            $staff = $this->em->getRepository(Staff::class)->find($id);
+
+            $jsonContent = SerializerBuilder::create()->build()->serialize($staff, 'json');
+            $staffSavedEncoded = json_decode($jsonContent,true);
+
+            return new JsonResponse(["id" => $id, "staff" => $staffSavedEncoded, "status" => 'success']);
+        } catch (Exception $e) {
+            return new JsonResponse(["status" => 'error', "error_messsage" => $e->getMessage()]);
+        }
+    }
+
     #[Route("/add", name:"add_staff", methods:["POST"])]
     public function addAction(Request $request): Response
     {
@@ -44,7 +59,8 @@ class StaffController extends AbstractController
     
                 $staffSaved = $this->em->getRepository(Staff::class)->save($staff, true);
     
-                $staffSavedEncoded = json_encode($staffSaved);
+                $jsonContent = SerializerBuilder::create()->build()->serialize($staffSaved, 'json');
+                $staffSavedEncoded = json_encode($jsonContent);
                 
                 return new JsonResponse(["id" => $staffSaved->getId(), "staff" => $staffSavedEncoded, "status" => 'success']);
             }
@@ -87,23 +103,37 @@ class StaffController extends AbstractController
                 throw new Exception("Parameters not available.");
             }
 
-            return new JsonResponse(["id" => $id, "status" => 'success']);
+            $jsonContent = SerializerBuilder::create()->build()->serialize($staffEdited, 'json');
+            $staffEditedEncoded = json_encode($jsonContent);
+
+            return new JsonResponse(["id" => $id, "staff" => $staffEditedEncoded, "status" => 'success']);
         } catch (Exception $e) {
-            return new JsonResponse(["status" => 'error', "error_messsage" => $e->getMessage()]);
+            return new JsonResponse(["status" => 'error',"staff" => [], "error_messsage" => $e->getMessage()]);
         }
     }
 
+    /** 
+     * Expected parameters :
+     * name : Staff Name
+     * start_date : Permission Start Date
+     * end_date : Permission End Date
+     * permit_status : Permission Status (If true it means only permitted staffs otherwise staffs without permission)
+     */
     #[Route("/filter", "staff_filter", methods:["GET"])]
     public function filterAction(Request $request)
     {
-        $staffRepo = $this->em->getRepository(Staff::class);
-        $inputs = $request->query->all();
-
-        $filteredResult = $staffRepo->filter($inputs);
-
-        $jsonContent = SerializerBuilder::create()->build()->serialize($filteredResult, 'json');
-
-        return new JsonResponse(["result" => json_decode($jsonContent), "status" => 'success']);
+        try {
+            $staffRepo = $this->em->getRepository(Staff::class);
+            $inputs = $request->query->all();
+    
+            $filteredResult = $staffRepo->filter($inputs);
+    
+            $jsonContent = SerializerBuilder::create()->build()->serialize($filteredResult, 'json');
+    
+            return new JsonResponse(["result" => json_decode($jsonContent), "status" => 'success']);
+        } catch (Exception $e) {
+            return new JsonResponse(["result" => [], "status" => 'error', "error_messsage" => $e->getMessage()]);
+        }
     }
 
 }
