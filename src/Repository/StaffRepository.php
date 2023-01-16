@@ -68,6 +68,7 @@ class StaffRepository extends ServiceEntityRepository
     public function filter($inputs)
     {
         $name = $inputs['name']??"";
+        $permitStatus = $inputs['permit_status']??true;
         $startDate = $inputs['start_date']??"";
         $startDate = date_create_from_format('d-m-Y', $inputs['start_date']);
         $startDate->setTime(0,0,0);
@@ -92,7 +93,14 @@ class StaffRepository extends ServiceEntityRepository
             ->setParameter('name',"%$name%");
         }
 
-        return $qb->getQuery()->getResult();
+        if ((bool)$permitStatus) {
+            return $qb->getQuery()->getResult();
+        } else {
+            return $this->createQueryBuilder('s')
+            ->where('s.id NOT IN (:permittedStaffIds)')
+            ->setParameter('permittedStaffIds', $qb->getQuery()->getResult())
+            ->getQuery()->getResult();
+        }
 
     }
 
