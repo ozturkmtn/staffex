@@ -10,10 +10,9 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
-use JMS\Serializer\SerializationContext;
 use JMS\Serializer\SerializerBuilder;
 
-#[Route("/staff")]
+#[Route("/api/staff")]
 class StaffController extends AbstractController
 {
 
@@ -23,16 +22,15 @@ class StaffController extends AbstractController
     )
     {}
 
-    #[Route("/{id}", name:"get_staff", methods:["GET"])]
+    #[Route("/get/{id}", name:"get_staff", methods:["GET"])]
     public function getAction($id, Request $request): Response
     {
         try {
             $staff = $this->em->getRepository(Staff::class)->find($id);
 
             $jsonContent = SerializerBuilder::create()->build()->serialize($staff, 'json');
-            $staffSavedEncoded = json_decode($jsonContent,true);
 
-            return new JsonResponse(["id" => $id, "staff" => $staffSavedEncoded, "status" => 'success']);
+            return new JsonResponse(["id" => $id, "staff" => json_decode($jsonContent,true), "status" => 'success']);
         } catch (Exception $e) {
             return new JsonResponse(["status" => 'error', "error_messsage" => $e->getMessage()]);
         }
@@ -42,7 +40,7 @@ class StaffController extends AbstractController
     public function addAction(Request $request): Response
     {
         try {
-            $inputs = $request->request->all();
+            $inputs = json_decode($request->getContent(),true);
 
             if (!empty($inputs)) {
                 $workStartDate = date_create_from_format('d/m/Y',$inputs['work_start_date']);
@@ -60,9 +58,8 @@ class StaffController extends AbstractController
                 $staffSaved = $this->em->getRepository(Staff::class)->save($staff, true);
     
                 $jsonContent = SerializerBuilder::create()->build()->serialize($staffSaved, 'json');
-                $staffSavedEncoded = json_encode($jsonContent);
                 
-                return new JsonResponse(["id" => $staffSaved->getId(), "staff" => $staffSavedEncoded, "status" => 'success']);
+                return new JsonResponse(["id" => $staffSaved->getId(), "staff" => json_encode($jsonContent), "status" => 'success']);
             }
         } catch (Exception $e) {
             return new JsonResponse(["id" => null, "staff" => [], "status" => 'error', "error_messsage" => $e->getMessage()]);
@@ -104,9 +101,8 @@ class StaffController extends AbstractController
             }
 
             $jsonContent = SerializerBuilder::create()->build()->serialize($staffEdited, 'json');
-            $staffEditedEncoded = json_encode($jsonContent);
 
-            return new JsonResponse(["id" => $id, "staff" => $staffEditedEncoded, "status" => 'success']);
+            return new JsonResponse(["id" => $id, "staff" => json_decode($jsonContent,true), "status" => 'success']);
         } catch (Exception $e) {
             return new JsonResponse(["status" => 'error',"staff" => [], "error_messsage" => $e->getMessage()]);
         }

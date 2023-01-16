@@ -11,8 +11,9 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use JMS\Serializer\SerializerBuilder;
 
-#[Route("/annual-permit")]
+#[Route("/api/annual-permit")]
 class AnnualPermitController extends AbstractController
 {
 
@@ -28,7 +29,7 @@ class AnnualPermitController extends AbstractController
         try {
             $staffRepo = $this->em->getRepository(Staff::class);
             $annualPermitRepo = $this->em->getRepository(AnnualPermit::class);
-            $inputs = $request->request->all();
+            $inputs = json_decode($request->getContent(),true);
 
             if (!empty($inputs)) {
                 $staff = $staffRepo->find($inputs['staff_id']);
@@ -47,9 +48,9 @@ class AnnualPermitController extends AbstractController
     
                 $annualPermitSaved = $annualPermitRepo->save($annualPermit, true);
     
-                $annualPermitSavedEncoded = json_encode($annualPermitSaved);
+                $jsonContent = SerializerBuilder::create()->build()->serialize($annualPermitSaved, 'json');
                 
-                return new JsonResponse(["id" => $annualPermitSaved->getId(), "annual_permit" => $annualPermitSavedEncoded, "status" => 'success']);
+                return new JsonResponse(["id" => $annualPermitSaved->getId(), "annual_permit" => json_decode($jsonContent,true), "status" => 'success']);
             }
         } catch (Exception $e) {
             return new JsonResponse(["id" => null, "annual_permit" => [], "status" => 'error', "error_messsage" => $e->getMessage()]);
@@ -90,9 +91,11 @@ class AnnualPermitController extends AbstractController
                 throw new Exception("Parameters not available.");
             }
 
-            return new JsonResponse(["id" => $id, "status" => 'success']);
+            $jsonContent = SerializerBuilder::create()->build()->serialize($annualPermitEdited, 'json');
+
+            return new JsonResponse(["id" => $id, "annual_permit" => json_decode($jsonContent,true), "status" => 'success']);
         } catch (Exception $e) {
-            return new JsonResponse(["status" => 'error', "error_messsage" => $e->getMessage()]);
+            return new JsonResponse(["status" => 'error', "annual_permit" => [], "error_messsage" => $e->getMessage()]);
         }
     }
 
